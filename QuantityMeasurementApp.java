@@ -1,28 +1,30 @@
-public class QuantityMeasurementApp {
+enum LengthUnit {
 
-    // 🔹 ENUM
-    enum LengthUnit {
-        FEET(1.0),
-        INCH(1.0 / 12.0),
-        YARDS(3.0),
-        CENTIMETERS(0.0328084);
+    FEET(1.0),
+    INCH(1.0 / 12.0),
+    YARDS(3.0),
+    CENTIMETERS(0.0328084);
 
-        private final double toFeet;
+    private final double toFeet;
 
-        LengthUnit(double toFeet) {
-            this.toFeet = toFeet;
-        }
-
-        public double toFeet(double value) {
-            return value * toFeet;
-        }
-
-        public double fromFeet(double value) {
-            return value / toFeet;
-        }
+    LengthUnit(double toFeet) {
+        this.toFeet = toFeet;
     }
 
-    // 🔹 Quantity Class
+    // 🔹 Convert to base (feet)
+    public double convertToBase(double value) {
+        return value * toFeet;
+    }
+
+    // 🔹 Convert from base (feet)
+    public double convertFromBase(double baseValue) {
+        return baseValue / toFeet;
+    }
+}
+
+public class QuantityMeasurementApp {
+
+    // 🔹 Quantity class (SIMPLIFIED)
     static class Quantity {
         private final double value;
         private final LengthUnit unit;
@@ -35,35 +37,30 @@ public class QuantityMeasurementApp {
             this.unit = unit;
         }
 
-        // 🔹 UC5 convert
+        // 🔹 Convert
         public Quantity convertTo(LengthUnit target) {
-            double feet = unit.toFeet(value);
-            double converted = target.fromFeet(feet);
+            double base = unit.convertToBase(value);
+            double converted = target.convertFromBase(base);
             return new Quantity(converted, target);
         }
 
-        // 🔹 UC6 add (default → first unit)
-        public Quantity add(Quantity other) {
-            return add(other, this.unit);
-        }
-
-        // 🔥 UC7 add with target unit
+        // 🔹 UC7 Add (with target)
         public Quantity add(Quantity other, LengthUnit targetUnit) {
-
             if (other == null || targetUnit == null) {
                 throw new IllegalArgumentException("Invalid input");
             }
 
-            double thisFeet = this.unit.toFeet(this.value);
-            double otherFeet = other.unit.toFeet(other.value);
+            double thisBase = unit.convertToBase(value);
+            double otherBase = other.unit.convertToBase(other.value);
 
-            double sumFeet = thisFeet + otherFeet;
+            double sumBase = thisBase + otherBase;
 
-            double result = targetUnit.fromFeet(sumFeet);
+            double result = targetUnit.convertFromBase(sumBase);
 
             return new Quantity(result, targetUnit);
         }
 
+        // 🔹 equals
         @Override
         public boolean equals(Object obj) {
             if (this == obj) return true;
@@ -72,8 +69,8 @@ public class QuantityMeasurementApp {
             Quantity other = (Quantity) obj;
 
             return Double.compare(
-                    this.unit.toFeet(this.value),
-                    other.unit.toFeet(other.value)
+                    unit.convertToBase(value),
+                    other.unit.convertToBase(other.value)
             ) == 0;
         }
 
@@ -83,25 +80,22 @@ public class QuantityMeasurementApp {
         }
     }
 
-    // 🔹 MAIN (UC7 DEMO)
+    // 🔹 MAIN (UC8 DEMO)
     public static void main(String[] args) {
 
+        // Conversion
         Quantity q1 = new Quantity(1.0, LengthUnit.FEET);
+        System.out.println("1ft → inch: " + q1.convertTo(LengthUnit.INCH));
+
+        // Addition
         Quantity q2 = new Quantity(12.0, LengthUnit.INCH);
+        System.out.println("Add (feet): " + q1.add(q2, LengthUnit.FEET));
 
-        // Different target units
-        System.out.println("Feet: " + q1.add(q2, LengthUnit.FEET));
-        System.out.println("Inches: " + q1.add(q2, LengthUnit.INCH));
-        System.out.println("Yards: " + q1.add(q2, LengthUnit.YARDS));
+        System.out.println("Add (yards): " + q1.add(q2, LengthUnit.YARDS));
 
-        // Yard + feet
-        Quantity q3 = new Quantity(1.0, LengthUnit.YARDS);
-        Quantity q4 = new Quantity(3.0, LengthUnit.FEET);
-        System.out.println("Yard result: " + q3.add(q4, LengthUnit.YARDS));
-
-        // CM + inch
-        Quantity q5 = new Quantity(2.54, LengthUnit.CENTIMETERS);
-        Quantity q6 = new Quantity(1.0, LengthUnit.INCH);
-        System.out.println("CM result: " + q5.add(q6, LengthUnit.CENTIMETERS));
+        // Equality
+        Quantity q3 = new Quantity(36.0, LengthUnit.INCH);
+        Quantity q4 = new Quantity(1.0, LengthUnit.YARDS);
+        System.out.println("Equal: " + q3.equals(q4));
     }
 }
